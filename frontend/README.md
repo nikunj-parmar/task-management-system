@@ -1,53 +1,52 @@
-# Task Management System - Frontend
+# Task Management Application - Frontend
 
-This is the frontend application for the Task Management System, built with React, TypeScript, and Material-UI.
+## Overview
+A modern task management application built with React and TypeScript, featuring a clean and intuitive user interface for managing tasks and projects.
 
 ## Features
-
-- User authentication (login/register)
-- Dashboard with task statistics
-- Task management (create, read, update, delete)
-- User management (for administrators)
-- User settings and profile management
+- User authentication and authorization
+- Task creation, updating, and deletion
+- Task categorization and filtering
+- Real-time updates
 - Responsive design for mobile and desktop
 
+## Technologies Used
+- React
+- TypeScript
+- Tailwind CSS
+- Axios for API communication
+- React Query for state management
+- React Router for navigation
+
 ## Prerequisites
+- Node.js (v14.0.0 or higher)
+- npm or yarn package manager
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
-- Backend API running (see backend README for setup)
-
-## Setup
-
-1. Clone the repository:
+## Installation
+1. Clone the repository
 ```bash
 git clone <repository-url>
-cd task-management-system/frontend
+cd frontend
 ```
 
-2. Install dependencies:
+2. Install dependencies
 ```bash
 npm install
+# or
+yarn install
 ```
 
-3. Create a `.env` file in the root directory with the following content:
-```
-REACT_APP_API_URL=http://localhost:8000
+3. Create a `.env` file in the root directory and add necessary environment variables:
+```env
+VITE_API_URL=http://localhost:3000
 ```
 
-4. Start the development server:
+4. Start the development server
 ```bash
-npm start
+npm run dev
+# or
+yarn dev
 ```
-
-The application will be available at `http://localhost:3000`.
-
-## Available Scripts
-
-- `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
-- `npm run eject` - Ejects from Create React App
 
 ## Project Structure
 
@@ -63,24 +62,20 @@ src/
 └── main.tsx       # Application entry point
 ```
 
-## Technologies Used
+## Available Scripts
 
-- React
-- TypeScript
-- Material-UI
-- React Router
-- React Query
-- React Hook Form
-- Zod
-- Axios
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run test` - Run tests
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a new branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 

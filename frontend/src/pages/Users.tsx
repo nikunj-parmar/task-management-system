@@ -1,30 +1,130 @@
 import {
-    Add as AddIcon,
-    Delete as DeleteIcon,
-    Edit as EditIcon,
-    Person as UserIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Person as UserIcon,
 } from '@mui/icons-material';
 import {
-    Box,
-    Button,
-    Card,
-    CardActions,
-    CardContent,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Grid,
-    IconButton,
-    MenuItem,
-    TextField,
-    Typography,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  MenuItem,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { userAPI } from '../services/api';
 import { User } from '../types';
+
+const styles = {
+  container: {
+    padding: '16px',
+    width: '100%',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+  },
+  title: {
+    fontSize: '24px',
+    fontWeight: 600,
+    color: '#2A2D7C',
+  },
+  userCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+      transform: 'translateY(-2px)',
+    },
+  },
+  userInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '16px',
+  },
+  userIcon: {
+    color: '#2A2D7C',
+    marginRight: '12px',
+    fontSize: '24px',
+  },
+  userName: {
+    fontSize: '18px',
+    fontWeight: 600,
+    color: '#2A2D7C',
+  },
+  userEmail: {
+    fontSize: '14px',
+    color: 'rgba(0, 0, 0, 0.6)',
+    marginBottom: '8px',
+  },
+  username: {
+    fontSize: '14px',
+    color: 'rgba(0, 0, 0, 0.6)',
+    marginBottom: '16px',
+  },
+  roleChip: {
+    borderRadius: '4px',
+    height: '24px',
+    fontSize: '12px',
+    fontWeight: 500,
+  },
+  actions: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '16px',
+  },
+  iconButton: {
+    padding: '4px',
+    '&:hover': {
+      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    },
+  },
+  editButton: {
+    color: '#2A2D7C',
+  },
+  deleteButton: {
+    color: '#d32f2f',
+  },
+  addButton: {
+    backgroundColor: '#2A2D7C',
+    borderRadius: '8px',
+    padding: '8px 16px',
+    textTransform: 'none',
+    fontWeight: 500,
+    '&:hover': {
+      backgroundColor: '#373AA9',
+    },
+  },
+  dialogContent: {
+    paddingTop: '16px',
+  },
+  textField: {
+    marginBottom: '16px',
+    '& .MuiOutlinedInput-root': {
+      '&:hover fieldset': {
+        borderColor: '#2A2D7C',
+      },
+    },
+  },
+  dialogActions: {
+    padding: '16px 24px',
+  },
+} as const;
 
 const roleColors = {
   admin: 'error',
@@ -32,10 +132,11 @@ const roleColors = {
   user: 'info',
 } as const;
 
-export default function Users() {
+export default function Users(): JSX.Element {
   const [open, setOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ['users'],
@@ -94,130 +195,153 @@ export default function Users() {
     }
   };
 
+  const handleLogoClick = () => {
+    navigate('/dashboard');
+  };
+
   if (isLoading) {
     return <Typography>Loading...</Typography>;
   }
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+    <Box sx={styles.container}>
+      <Box sx={styles.header}>
+        <Typography variant="h1" sx={styles.title}>
           Users
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpen()}
+          sx={styles.addButton}
         >
-          New User
+          Add User
         </Button>
       </Box>
 
       <Grid container spacing={3}>
         {users?.map((user: User) => (
           <Grid item xs={12} sm={6} md={4} key={user.id}>
-            <Card>
+            <Card sx={styles.userCard}>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <UserIcon sx={{ mr: 1 }} />
-                  <Typography variant="h6" component="h2">
+                <Box sx={styles.userInfo}>
+                  <UserIcon sx={styles.userIcon} />
+                  <Typography sx={styles.userName}>
                     {user.first_name} {user.last_name}
                   </Typography>
                 </Box>
-                <Typography color="text.secondary" gutterBottom>
+                <Typography sx={styles.userEmail}>
                   {user.email}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <Typography sx={styles.username}>
                   @{user.username}
                 </Typography>
                 <Chip
-                  label={user.role}
+                  label={user.role.toLowerCase()}
                   color={roleColors[user.role as keyof typeof roleColors]}
                   size="small"
-                  sx={{ mt: 1 }}
+                  sx={styles.roleChip}
                 />
+                <Box sx={styles.actions}>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleOpen(user)}
+                    sx={{ ...styles.iconButton, ...styles.editButton }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => deleteUserMutation.mutate(user.id)}
+                    sx={{ ...styles.iconButton, ...styles.deleteButton }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
               </CardContent>
-              <CardActions>
-                <IconButton
-                  size="small"
-                  onClick={() => handleOpen(user)}
-                >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => deleteUserMutation.mutate(user.id)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </CardActions>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontSize: '20px', fontWeight: 600, color: '#2A2D7C' }}>
           {selectedUser ? 'Edit User' : 'Create New User'}
         </DialogTitle>
         <form onSubmit={handleSubmit}>
-          <DialogContent>
+          <DialogContent sx={styles.dialogContent}>
             <TextField
               autoFocus
-              margin="dense"
               name="username"
               label="Username"
               type="text"
               fullWidth
               defaultValue={selectedUser?.username}
               required
+              sx={styles.textField}
             />
             <TextField
-              margin="dense"
               name="email"
               label="Email"
               type="email"
               fullWidth
               defaultValue={selectedUser?.email}
               required
+              sx={styles.textField}
             />
             <TextField
-              margin="dense"
               name="first_name"
               label="First Name"
               type="text"
               fullWidth
               defaultValue={selectedUser?.first_name}
               required
+              sx={styles.textField}
             />
             <TextField
-              margin="dense"
               name="last_name"
               label="Last Name"
               type="text"
               fullWidth
               defaultValue={selectedUser?.last_name}
               required
+              sx={styles.textField}
             />
             <TextField
-              margin="dense"
               name="role"
               label="Role"
               select
               fullWidth
               defaultValue={selectedUser?.role || 'user'}
+              sx={styles.textField}
             >
               <MenuItem value="admin">Admin</MenuItem>
               <MenuItem value="manager">Manager</MenuItem>
               <MenuItem value="user">User</MenuItem>
             </TextField>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
+          <DialogActions sx={styles.dialogActions}>
+            <Button
+              onClick={handleClose}
+              sx={{
+                color: 'rgba(0, 0, 0, 0.6)',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
               variant="contained"
               disabled={createUserMutation.isPending || updateUserMutation.isPending}
+              sx={styles.addButton}
             >
               {selectedUser ? 'Update' : 'Create'}
             </Button>

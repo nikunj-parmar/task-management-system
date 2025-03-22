@@ -29,7 +29,7 @@ export interface Task {
   id: number;
   title: string;
   description: string;
-  status: 'todo' | 'in_progress' | 'done';
+  status: 'todo' | 'in_progress' | 'review' | 'done';
   priority: 'low' | 'medium' | 'high';
   due_date: string;
   created_at: string;

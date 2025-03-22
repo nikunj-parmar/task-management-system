@@ -1,156 +1,125 @@
 import {
-    Dashboard as DashboardIcon,
-    Logout as LogoutIcon,
-    Menu as MenuIcon,
-    Settings as SettingsIcon,
-    Assignment as TaskIcon,
-    People as UserIcon,
+  Dashboard as DashboardIcon,
+  Settings as SettingsIcon,
+  Assignment as TaskIcon,
+  People as UserIcon
 } from '@mui/icons-material';
 import {
-    AppBar,
-    Box,
-    Divider,
-    Drawer,
-    IconButton,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Toolbar,
-    Typography,
-    useMediaQuery,
-    useTheme,
+  Box,
+  CssBaseline,
+  Drawer,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
-import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import Header from './Header';
+import Sidebar from './Sidebar';
 
-const drawerWidth = 240;
+const drawerWidth = 280;
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
   { text: 'Tasks', icon: <TaskIcon />, path: '/tasks' },
   { text: 'Users', icon: <UserIcon />, path: '/users' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 
-export default function Layout() {
+export default function Layout(): JSX.Element {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [fadeIn, setFadeIn] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const location = useLocation();
+  const { logout, user } = useAuth();
 
-  const handleDrawerToggle = () => {
+  useEffect(() => {
+    setFadeIn(true);
+  }, [location]);
+
+  const handleDrawerToggle = (): void => {
     setMobileOpen(!mobileOpen);
   };
 
-  const drawer = (
-    <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          Task Manager
-        </Typography>
-      </Toolbar>
-      <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem
-            button
-            key={item.text}
-            onClick={() => {
-              navigate(item.path);
-              if (isMobile) {
-                setMobileOpen(false);
-              }
-            }}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <List>
-        <ListItem button onClick={logout}>
-          <ListItemIcon>
-            <LogoutIcon />
-          </ListItemIcon>
-          <ListItemText primary="Logout" />
-        </ListItem>
-      </List>
-    </div>
-  );
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleProfileClick = () => {
+    handleClose();
+    navigate('/profile');
+  };
+
+  const handleLogout = () => {
+    handleClose();
+    logout();
+  };
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar
-        position="fixed"
+    <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+      <CssBaseline />
+      <Header onMenuClick={handleDrawerToggle} />
+      
+      {/* Mobile drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true,
+        }}
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          display: { xs: 'block', sm: 'none' },
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            backgroundColor: '#2A2D7C',
+            border: 'none',
+            boxShadow: '4px 0 8px rgba(0,0,0,0.1)',
+            zIndex: (theme) => theme.zIndex.drawer + 2,
+          },
         }}
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Task Management System
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        <Sidebar />
+      </Drawer>
+
+      {/* Desktop drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', sm: 'block' },
+          width: drawerWidth,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            backgroundColor: '#2A2D7C',
+            border: 'none',
+            boxShadow: '4px 0 8px rgba(0,0,0,0.1)',
+            zIndex: (theme) => theme.zIndex.drawer,
+          },
+        }}
+        open
       >
-        {isMobile ? (
-          <Drawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{
-              keepMounted: true, // Better open performance on mobile.
-            }}
-            sx={{
-              display: { xs: 'block', sm: 'none' },
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
-                width: drawerWidth,
-              },
-            }}
-          >
-            {drawer}
-          </Drawer>
-        ) : (
-          <Drawer
-            variant="permanent"
-            sx={{
-              display: { xs: 'none', sm: 'block' },
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
-                width: drawerWidth,
-              },
-            }}
-            open
-          >
-            {drawer}
-          </Drawer>
-        )}
-      </Box>
+        <Sidebar />
+      </Drawer>
+
+      {/* Main content */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: '64px',
+          marginTop: '64px',
+          minHeight: 'calc(100vh - 64px)',
+          backgroundColor: '#f5f5f5',
+          position: 'relative',
+          zIndex: (theme) => theme.zIndex.drawer - 1,
         }}
       >
         <Outlet />

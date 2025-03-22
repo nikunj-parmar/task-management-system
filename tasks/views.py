@@ -94,9 +94,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         if user.role == 'admin':
             return Task.objects.all()
         elif user.role == 'manager':
-            return Task.objects.filter(created_by=user) | Task.objects.filter(assigned_to=user)
+            return Task.objects.filter(Q(created_by=user) | Q(assigned_to=user))
         else:
-            return Task.objects.filter(assigned_to=user)
+            return Task.objects.filter(Q(created_by=user) | Q(assigned_to=user))
 
     def get_permissions(self):
         if self.action == 'destroy':

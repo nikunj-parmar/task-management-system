@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { AuthResponse, LoginCredentials, RegisterData, Task, User } from '../types';
+import { AuthResponse, LoginCredentials, RegisterData, User } from '../types';
+import { Task } from '../types/task';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -51,7 +52,7 @@ export const userAPI = {
   register: (data: RegisterData) => api.post<AuthResponse>('/api/token/', data),
   getCurrentUser: () => api.get<User>('/api/users/me/'),
   getUser: (id: number) => api.get<User>(`/api/users/${id}/`),
-  getUsers: () => api.get<User[]>('/api/users/'),
+  getUsers: () => api.get<{ results: User[] }>('/api/users/').then(res => ({ data: res.data.results })),
   createUser: (data: Partial<User>) => api.post<User>('/api/users/', data),
   updateUser: (id: number, data: Partial<User>) => api.patch<User>(`/api/users/${id}/`, data),
   deleteUser: (id: number) => api.delete(`/api/users/${id}/`),
@@ -60,7 +61,7 @@ export const userAPI = {
 };
 
 export const taskAPI = {
-  getTasks: () => api.get<Task[]>('/api/tasks/'),
+  getTasks: () => api.get<{ results: Task[] }>('/api/tasks/').then(res => ({ data: res.data.results })),
   getTask: (id: number) => api.get<Task>(`/api/tasks/${id}/`),
   createTask: (data: Partial<Task>) => api.post<Task>('/api/tasks/', data),
   updateTask: (id: number, data: Partial<Task>) => api.patch<Task>(`/api/tasks/${id}/`, data),

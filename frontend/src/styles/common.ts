@@ -1,0 +1,80 @@
+export const commonStyles = {
+  title: {
+    fontWeight: 700,
+    background: 'linear-gradient(135deg, #4a148c 0%, #6a1b9a 50%, #9c27b0 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    letterSpacing: '-0.5px',
+    position: 'relative',
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: '-8px',
+      left: 0,
+      width: '60px',
+      height: '4px',
+      background: 'linear-gradient(90deg, #4a148c, #9c27b0)',
+      borderRadius: '2px',
+    },
+  },
+  card: {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+    background: 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
+    border: '1px solid rgba(74, 20, 140, 0.1)',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+    },
+  },
+  cardTitle: {
+    fontWeight: 600,
+    color: '#4a148c',
+    position: 'relative',
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: '-4px',
+      left: 0,
+      width: '40px',
+      height: '2px',
+      background: 'linear-gradient(90deg, #4a148c, #9c27b0)',
+      borderRadius: '1px',
+    },
+  },
+  button: {
+    background: 'linear-gradient(135deg, #4a148c 0%, #6a1b9a 50%, #9c27b0 100%)',
+    boxShadow: '0 4px 12px rgba(74, 20, 140, 0.2)',
+    textTransform: 'none',
+    fontWeight: 600,
+    letterSpacing: '0.5px',
+    '&:hover': {
+      background: 'linear-gradient(135deg, #6a1b9a 0%, #4a148c 50%, #9c27b0 100%)',
+      boxShadow: '0 6px 16px rgba(74, 20, 140, 0.3)',
+    },
+  },
+  deleteButton: {
+    background: 'linear-gradient(135deg, #d32f2f 0%, #c62828 100%)',
+    '&:hover': {
+      background: 'linear-gradient(135deg, #c62828 0%, #d32f2f 100%)',
+    },
+  },
+  dialog: {
+    borderRadius: '12px',
+    minWidth: '320px',
+  },
+  dialogTitle: {
+    pb: 1,
+    color: '#4a148c',
+    fontWeight: 600,
+  },
+  dialogActions: {
+    px: 3,
+    pb: 3,
+  },
+} as const; 

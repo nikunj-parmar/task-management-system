@@ -1,250 +1,415 @@
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  Edit as EditIcon,
-  Assignment as TaskIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import {
   Box,
   Button,
   Card,
-  CardActions,
   CardContent,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   Grid,
   IconButton,
+  ListItemIcon,
+  Menu,
   MenuItem,
-  TextField,
-  Typography,
+  Typography
 } from '@mui/material';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { format, isValid } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import TaskDrawer from '../components/tasks/TaskDrawer';
+import { useAuth } from '../hooks/useAuth';
 import { taskAPI } from '../services/api';
-import { Task } from '../types';
+import { commonStyles } from '../styles/common';
+import { Task, TaskPriority, TaskStatus } from '../types/task';
 
-const priorityColors = {
-  low: 'success',
-  medium: 'warning',
-  high: 'error',
+const styles = {
+  container: {
+    padding: '24px',
+    width: '100%',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+  },
+  title: {
+    fontSize: '24px',
+    fontWeight: 600,
+    color: '#2A2D7C',
+  },
+  taskList: {
+    margin: 0,
+  },
+  taskCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+      transform: 'translateY(-2px)',
+    },
+  },
+  addButton: {
+    backgroundColor: '#2A2D7C',
+    borderRadius: '8px',
+    padding: '8px 16px',
+    textTransform: 'none',
+    fontWeight: 500,
+    '&:hover': {
+      backgroundColor: '#373AA9',
+    },
+  },
+  taskTitle: {
+    fontSize: '16px',
+    fontWeight: 600,
+    color: '#2A2D7C',
+    marginBottom: '8px',
+  },
+  taskDescription: {
+    fontSize: '14px',
+    color: 'rgba(0, 0, 0, 0.6)',
+    marginBottom: '16px',
+  },
+  taskDueDate: {
+    fontSize: '14px',
+    color: 'rgba(0, 0, 0, 0.6)',
+    marginBottom: '16px',
+  },
+  taskActions: {
+    display: 'flex',
+    gap: '8px',
+  },
+  taskHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '16px',
+  },
+  actionButtons: {
+    display: 'flex',
+    gap: '4px',
+  },
+  iconButton: {
+    padding: '4px',
+    '&:hover': {
+      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    },
+  },
+  editButton: {
+    color: '#2A2D7C',
+  },
+  deleteButton: {
+    color: '#d32f2f',
+  },
+  chip: {
+    borderRadius: '4px',
+    height: '24px',
+    fontSize: '12px',
+    fontWeight: 500,
+  },
 } as const;
 
-const statusColors = {
-  todo: 'default',
-  in_progress: 'primary',
-  done: 'success',
-} as const;
+const statusColors: Record<TaskStatus, 'default' | 'primary' | 'success' | 'warning'> = {
+  [TaskStatus.TODO]: 'default',
+  [TaskStatus.IN_PROGRESS]: 'primary',
+  [TaskStatus.DONE]: 'success',
+};
 
-export default function Tasks() {
-  const { id } = useParams<{ id: string }>();
-  const [open, setOpen] = useState(false);
+const priorityColors: Record<TaskPriority, 'error' | 'success' | 'warning'> = {
+  [TaskPriority.HIGH]: 'error',
+  [TaskPriority.MEDIUM]: 'warning',
+  [TaskPriority.LOW]: 'success',
+};
+
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    if (!isValid(date)) {
+      return 'Invalid date';
+    }
+    return format(date, 'MMM d, yyyy h:mm a');
+  } catch (error) {
+    return 'Invalid date';
+  }
+};
+
+export default function Tasks(): JSX.Element {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | undefined>();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const queryClient = useQueryClient();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const { data: tasks, isLoading } = useQuery({
+  const { data: tasksData, isLoading, refetch } = useQuery<Task[]>({
     queryKey: ['tasks'],
-    queryFn: () => taskAPI.getTasks().then((res) => res.data),
-  });
-
-  const createTaskMutation = useMutation({
-    mutationFn: (data: Partial<Task>) => taskAPI.createTask(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      setOpen(false);
+    queryFn: async () => {
+      const response = await taskAPI.getTasks();
+      return response.data as Task[];
     },
   });
 
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Task> }) =>
-      taskAPI.updateTask(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      setOpen(false);
-    },
-  });
+  useEffect(() => {
+    if (tasksData) {
+      setTasks(tasksData);
+    }
+    setLoading(isLoading);
+  }, [tasksData, isLoading]);
 
-  const deleteTaskMutation = useMutation({
-    mutationFn: (id: number) => taskAPI.deleteTask(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    },
-  });
-
-  const handleOpen = (task?: Task) => {
-    setSelectedTask(task || null);
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setSelectedTask(null);
-    setOpen(false);
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const data = {
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      status: formData.get('status') as Task['status'],
-      priority: formData.get('priority') as Task['priority'],
-      due_date: formData.get('due_date') as string,
-    };
-
-    if (selectedTask) {
-      updateTaskMutation.mutate({ id: selectedTask.id, data });
-    } else {
-      createTaskMutation.mutate(data);
+  const handleCreateTask = async (data: Partial<Task>) => {
+    try {
+      const newTask = await taskAPI.createTask(data);
+      refetch();
+      setDrawerOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
 
-  if (isLoading) {
+  const handleUpdateTask = async (data: Partial<Task>) => {
+    if (!editingTask) return;
+
+    try {
+      const updatedTask = await taskAPI.updateTask(editingTask.id, data);
+      refetch();
+      setDrawerOpen(false);
+      setEditingTask(undefined);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!selectedTask) return;
+
+    try {
+      await taskAPI.deleteTask(selectedTask.id);
+      refetch();
+      setDeleteDialogOpen(false);
+      setSelectedTask(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, task: Task) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedTask(task);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedTask(null);
+  };
+
+  const handleEditClick = () => {
+    if (selectedTask) {
+      setEditingTask(selectedTask);
+      setDrawerOpen(true);
+    }
+    handleMenuClose();
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const getPriorityColor = (priority: TaskPriority) => {
+    return priorityColors[priority] || 'default';
+  };
+
+  const getStatusColor = (status: TaskStatus) => {
+    return statusColors[status] || 'default';
+  };
+
+  if (loading) {
     return <Typography>Loading...</Typography>;
   }
 
+  if (error) {
+    return <Typography color="error">{error}</Typography>;
+  }
+
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+    <Box sx={styles.container}>
+      <Box sx={styles.header}>
+        <Typography variant="h1" sx={styles.title}>
           Tasks
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => handleOpen()}
+          onClick={() => {
+            setEditingTask(undefined);
+            setDrawerOpen(true);
+          }}
+          sx={styles.addButton}
         >
-          New Task
+          Add Task
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
-        {tasks?.map((task) => (
+      <Grid container spacing={3} sx={styles.taskList}>
+        {tasks.map((task) => (
           <Grid item xs={12} sm={6} md={4} key={task.id}>
-            <Card>
+            <Card sx={styles.taskCard}>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <TaskIcon sx={{ mr: 1 }} />
-                  <Typography variant="h6" component="h2">
+                <Box sx={styles.taskHeader}>
+                  <Typography sx={styles.taskTitle}>
                     {task.title}
                   </Typography>
+                  <Box sx={styles.actionButtons}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuClick(e, task)}
+                      sx={{ ...styles.iconButton, ...styles.editButton }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setDeleteDialogOpen(true);
+                      }}
+                      sx={{ ...styles.iconButton, ...styles.deleteButton }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
-                <Typography color="text.secondary" gutterBottom>
+                <Typography sx={styles.taskDescription}>
                   {task.description}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <Typography sx={styles.taskDueDate}>
+                  Due: {formatDate(task.dueDate)}
+                </Typography>
+                <Box sx={styles.taskActions}>
                   <Chip
-                    label={task.priority}
-                    color={priorityColors[task.priority]}
+                    label={task.priority.toLowerCase()}
+                    color={getPriorityColor(task.priority)}
                     size="small"
+                    sx={styles.chip}
                   />
                   <Chip
-                    label={task.status}
-                    color={statusColors[task.status]}
+                    label={task.status.toLowerCase()}
+                    color={getStatusColor(task.status)}
                     size="small"
+                    sx={styles.chip}
                   />
                 </Box>
-                <Typography variant="body2" color="text.secondary">
-                  Due: {format(new Date(task.due_date), 'MMM d, yyyy')}
-                </Typography>
               </CardContent>
-              <CardActions>
-                <IconButton
-                  size="small"
-                  onClick={() => handleOpen(task)}
-                >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => deleteTaskMutation.mutate(task.id)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </CardActions>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {selectedTask ? 'Edit Task' : 'Create New Task'}
-        </DialogTitle>
-        <form onSubmit={handleSubmit}>
-          <DialogContent>
-            <TextField
-              autoFocus
-              margin="dense"
-              name="title"
-              label="Title"
-              type="text"
-              fullWidth
-              defaultValue={selectedTask?.title}
-              required
-            />
-            <TextField
-              margin="dense"
-              name="description"
-              label="Description"
-              type="text"
-              fullWidth
-              multiline
-              rows={4}
-              defaultValue={selectedTask?.description}
-            />
-            <TextField
-              margin="dense"
-              name="status"
-              label="Status"
-              select
-              fullWidth
-              defaultValue={selectedTask?.status || 'pending'}
-            >
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="in_progress">In Progress</MenuItem>
-              <MenuItem value="completed">Completed</MenuItem>
-            </TextField>
-            <TextField
-              margin="dense"
-              name="priority"
-              label="Priority"
-              select
-              fullWidth
-              defaultValue={selectedTask?.priority || 'medium'}
-            >
-              <MenuItem value="low">Low</MenuItem>
-              <MenuItem value="medium">Medium</MenuItem>
-              <MenuItem value="high">High</MenuItem>
-            </TextField>
-            <TextField
-              margin="dense"
-              name="due_date"
-              label="Due Date"
-              type="date"
-              fullWidth
-              defaultValue={selectedTask?.due_date?.split('T')[0]}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={createTaskMutation.isPending || updateTaskMutation.isPending}
-            >
-              {selectedTask ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
-        </form>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          elevation: 0,
+          sx: {
+            overflow: 'visible',
+            filter: 'drop-shadow(0px 4px 20px rgba(0,0,0,0.1))',
+            mt: 1.5,
+            borderRadius: '12px',
+            minWidth: '180px',
+            '&:before': {
+              content: '""',
+              display: 'block',
+              position: 'absolute',
+              top: 0,
+              right: 14,
+              width: 10,
+              height: 10,
+              bgcolor: 'background.paper',
+              transform: 'translateY(-50%) rotate(45deg)',
+              zIndex: 0,
+              borderLeft: '1px solid rgba(0, 0, 0, 0.05)',
+              borderTop: '1px solid rgba(0, 0, 0, 0.05)',
+            },
+          },
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={handleEditClick}>
+          <ListItemIcon>
+            <EditIcon fontSize="small" sx={{ color: '#1a237e' }} />
+          </ListItemIcon>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>Edit</Typography>
+        </MenuItem>
+        <MenuItem onClick={handleDeleteClick}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" sx={{ color: '#d32f2f' }} />
+          </ListItemIcon>
+          <Typography variant="body2" sx={{ fontWeight: 500, color: '#d32f2f' }}>Delete</Typography>
+        </MenuItem>
+      </Menu>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{
+          sx: commonStyles.dialog,
+        }}
+      >
+        <DialogTitle sx={commonStyles.dialogTitle}>Delete Task</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this task? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={commonStyles.dialogActions}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            sx={{
+              color: 'text.secondary',
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteTask}
+            variant="contained"
+            sx={commonStyles.deleteButton}
+          >
+            Delete
+          </Button>
+        </DialogActions>
       </Dialog>
+
+      <TaskDrawer
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setEditingTask(undefined);
+        }}
+        onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+        task={editingTask}
+        isEditing={!!editingTask}
+      />
     </Box>
   );
 } 

@@ -2,7 +2,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Routes } from 'react-router-dom';
-import Layout from './components/Layout';
+import Layout from './components/layout/Layout';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './hooks/useAuth';
 import Dashboard from './pages/Dashboard';
@@ -33,6 +33,7 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route path="tasks" element={<Tasks />} />
               <Route path="users" element={<Users />} />
               <Route path="settings" element={<Settings />} />
